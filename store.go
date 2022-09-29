@@ -16,6 +16,7 @@ package vault
 import (
 	"log"
 	"context"
+	"errors"
 
 	vault "github.com/hashicorp/vault/api"
 	auth "github.com/hashicorp/vault/api/auth/kubernetes"
@@ -82,11 +83,36 @@ type Store struct {
 // This expects the access credentials to be in a standard place, e.g. ~/.aws/credentials
 func New(opts ...Option) (wtypes.Store, error) {
 	options := options{
-		vault_k8s_auth_mount_path: "kubernetes",
-		vault_k8s_auth_sa_token_path: "/var/run/secrets/kubernetes.io/serviceaccount/token",
+		vault_addr: 					"",
+		vault_auth: 					"",
+		vault_token: 					"",
+		vault_k8s_auth_role: 			"",
+		vault_k8s_auth_sa_token_path: 	"/var/run/secrets/kubernetes.io/serviceaccount/token",
+		vault_k8s_auth_mount_path:		"kubernetes",
+		vault_secrets_mount_path: 		"",
 	}
 	for _, o := range opts {
 		o.apply(&options)
+	}
+
+	if options.vault_addr == "" {
+		return nil, errors.New("vault_addr option missing")
+	}
+
+	if options.vault_auth == "" {
+		return nil, errors.New("vault_auth option missing")
+	}
+
+	if options.vault_secrets_mount_path == "" {
+		return nil, errors.New("vault_secrets_mount_path option missing")
+	}
+
+	if options.vault_auth == "token" && options.vault_token == "" {
+		return nil, errors.New("vault_token option missing")
+	}
+
+	if options.vault_auth == "kubernetes" && options.vault_k8s_auth_role == "" {
+		return nil, errors.New("vault_k8s_auth_role option missing")
 	}
 
 	// If set, the VAULT_ADDR environment variable will be the address that

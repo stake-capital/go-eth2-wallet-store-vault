@@ -21,7 +21,7 @@ import (
 )
 
 type WalletIndexSecret struct {
-	data []byte `json="data"`
+	data []byte 
 }
 
 // StoreAccountsIndex stores the account index.
