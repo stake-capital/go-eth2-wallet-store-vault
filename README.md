@@ -51,7 +51,7 @@ package main
 
 import (
 	e2wallet "github.com/wealdtech/go-eth2-wallet"
-	vault "github.com/wealdtech/go-eth2-wallet-store-vault"
+	vault "github.com/bliiitz/go-eth2-wallet-store-vault"
 )
 
 func main() {
