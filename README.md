@@ -80,12 +80,12 @@ func main() {
 
 ## Maintainers
 
-Bliiitz: [@mcdee](https://github.com/bliiitz).
+Bliiitz: [@bliiitz](https://github.com/bliiitz).
 
 ## Contribute
 
-Contributions welcome. Please check out [the issues](https://github.com/wealdtech/go-eth2-wallet-store-vault/issues).
+Contributions welcome. Please check out [the issues](https://github.com/bliiitz/go-eth2-wallet-store-vault/issues).
 
 ## License
 
-[Apache-2.0](LICENSE) © 2019 Bliiitz 
+[Apache-2.0](LICENSE) © 2022 Bliiitz 
