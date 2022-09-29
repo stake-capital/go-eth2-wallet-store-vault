@@ -11,16 +11,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package s3
+package vault
 
 import (
-	"bytes"
+	"context"
 	"encoding/json"
 	"strings"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/service/s3"
-	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
 )
@@ -57,12 +54,10 @@ func (s *Store) StoreAccount(walletID uuid.UUID, accountID uuid.UUID, data []byt
 	}
 
 	path := s.accountPath(walletID, accountID)
-	uploader := s3manager.NewUploader(s.session)
-	_, err = uploader.Upload(&s3manager.UploadInput{
-		Bucket: aws.String(s.bucket),
-		Key:    aws.String(path),
-		Body:   bytes.NewReader(data),
+	s.client.KVv2(s.vault_secrets_mount_path).Put(context.Background(), path, map[string]interface{}{
+		"data": data,
 	})
+
 	if err != nil {
 		return errors.Wrap(err, "failed to store key")
 	}
@@ -72,16 +67,15 @@ func (s *Store) StoreAccount(walletID uuid.UUID, accountID uuid.UUID, data []byt
 // RetrieveAccount retrieves account-level data.  It will fail if it cannot retrieve the data.
 func (s *Store) RetrieveAccount(walletID uuid.UUID, accountID uuid.UUID) ([]byte, error) {
 	path := s.accountPath(walletID, accountID)
-	buf := aws.NewWriteAtBuffer([]byte{})
-	downloader := s3manager.NewDownloader(s.session)
-	if _, err := downloader.Download(buf,
-		&s3.GetObjectInput{
-			Bucket: aws.String(s.bucket),
-			Key:    aws.String(path),
-		}); err != nil {
+
+	secret, err := s.client.KVv2(s.vault_secrets_mount_path).Get(context.Background(), path)
+	if err != nil {
 		return nil, err
 	}
-	data, err := s.decryptIfRequired(buf.Bytes())
+
+	returnedData, _ := secret.Data["data"].([]byte)
+
+	data, err := s.decryptIfRequired(returnedData)
 	if err != nil {
 		return nil, err
 	}
@@ -93,36 +87,35 @@ func (s *Store) RetrieveAccounts(walletID uuid.UUID) <-chan []byte {
 	path := s.walletPath(walletID)
 	ch := make(chan []byte, 1024)
 	go func() {
-		conn := s3.New(s.session)
-		resp, err := conn.ListObjectsV2(&s3.ListObjectsV2Input{
-			Bucket: aws.String(s.bucket),
-			Prefix: aws.String(path + "/"),
-		})
-		if err == nil {
-			for _, item := range resp.Contents {
-				if strings.HasSuffix(*item.Key, "/") {
-					// Directory
-					continue
+		accountList, err := s.client.Logical().List(s.vault_secrets_mount_path + "/" + path + "/metadata")
+		if err == nil && accountList != nil && accountList.Data != nil {
+			k, ok := accountList.Data["keys"]
+			if ok && k != nil {
+				i, _ := k.([]string)
+				for _, item := range i {
+					if strings.HasSuffix(item, "/") {
+						// Directory
+						continue
+					}
+					if strings.HasSuffix(item, walletID.String()) {
+						// Wallet
+						continue
+					}
+
+					uuidId, _ := uuid.Parse(item)
+					secret, err := s.client.KVv2(s.vault_secrets_mount_path).Get(context.Background(), s.accountPath(walletID, uuidId))
+					if err != nil {
+						continue
+					}
+
+					returnedData, _ := secret.Data["data"].([]byte)
+					
+					data, err := s.decryptIfRequired(returnedData)
+					if err != nil {
+						continue
+					}
+					ch <- data
 				}
-				if strings.HasSuffix(*item.Key, walletID.String()) {
-					// Wallet
-					continue
-				}
-				buf := aws.NewWriteAtBuffer([]byte{})
-				downloader := s3manager.NewDownloader(s.session)
-				_, err := downloader.Download(buf,
-					&s3.GetObjectInput{
-						Bucket: aws.String(s.bucket),
-						Key:    aws.String(*item.Key),
-					})
-				if err != nil {
-					continue
-				}
-				data, err := s.decryptIfRequired(buf.Bytes())
-				if err != nil {
-					continue
-				}
-				ch <- data
 			}
 		}
 		close(ch)

@@ -11,18 +11,23 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package s3
+package vault
 
 import (
-	"bytes"
 	"encoding/json"
+	"context"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/service/s3"
-	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
 )
+
+type WalletListSecret struct {
+	keys []string
+}
+
+type WalletSecret struct {
+	data []byte 
+}
 
 // StoreWallet stores wallet-level data.  It will fail if it cannot store the data.
 // Note that this will overwrite any existing data; it is up to higher-level functions to check for the presence of a wallet with
@@ -34,11 +39,9 @@ func (s *Store) StoreWallet(id uuid.UUID, name string, data []byte) error {
 	if err != nil {
 		return errors.Wrap(err, "failed to encrypt wallet")
 	}
-	uploader := s3manager.NewUploader(s.session)
-	_, err = uploader.Upload(&s3manager.UploadInput{
-		Bucket: aws.String(s.bucket),
-		Key:    aws.String(path),
-		Body:   bytes.NewReader(data),
+
+	s.client.KVv2(s.vault_secrets_mount_path).Put(context.Background(), path, map[string]interface{}{
+		"data": data,
 	})
 	if err != nil {
 		return errors.Wrap(err, "failed to store wallet")
@@ -78,27 +81,32 @@ func (s *Store) RetrieveWalletByID(walletID uuid.UUID) ([]byte, error) {
 func (s *Store) RetrieveWallets() <-chan []byte {
 	ch := make(chan []byte, 1024)
 	go func() {
-		conn := s3.New(s.session)
-		resp, err := conn.ListObjectsV2(&s3.ListObjectsV2Input{Bucket: aws.String(s.bucket)})
-		if err == nil {
-			for _, item := range resp.Contents {
-				buf := aws.NewWriteAtBuffer([]byte{})
-				downloader := s3manager.NewDownloader(s.session)
-				_, err := downloader.Download(buf,
-					&s3.GetObjectInput{
-						Bucket: aws.String(s.bucket),
-						Key:    aws.String(*item.Key),
-					})
-				if err != nil {
-					continue
+		walletList, err := s.client.Logical().List(s.vault_secrets_mount_path + "/metadata")
+		if err == nil && walletList != nil && walletList.Data != nil {		
+			k, ok := walletList.Data["keys"]
+			if ok && k != nil {
+				i, _ := k.([]string)
+				for _, walletIdWithSuffix := range i {
+					lastCharPos := len(walletIdWithSuffix) - 1
+					walletId := walletIdWithSuffix[:lastCharPos]
+
+					uuidId, _ := uuid.Parse(walletId)
+					secret, err := s.client.KVv2(s.vault_secrets_mount_path).Get(context.Background(), s.walletHeaderPath(uuidId))
+					if err != nil {
+						continue
+					}
+
+					returnedData, _ := secret.Data["data"].([]byte)
+					
+					data, err := s.decryptIfRequired(returnedData)
+					if err != nil {
+						continue
+					}
+					ch <- data
 				}
-				data, err := s.decryptIfRequired(buf.Bytes())
-				if err != nil {
-					continue
-				}
-				ch <- data
 			}
 		}
+
 		close(ch)
 	}()
 	return ch

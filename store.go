@@ -11,26 +11,29 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package s3
+package vault
 
 import (
-	"encoding/hex"
-	"fmt"
-	"strings"
+	"log"
+	"context"
 
-	"github.com/aws/aws-sdk-go/aws"
-	session "github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/s3"
-	"github.com/pkg/errors"
-	util "github.com/wealdtech/go-eth2-util"
+	vault "github.com/hashicorp/vault/api"
+	auth "github.com/hashicorp/vault/api/auth/kubernetes"
+
 	wtypes "github.com/wealdtech/go-eth2-wallet-types/v2"
 )
 
 // options are the options for the S3 store
 type options struct {
-	id         []byte
-	region     string
-	passphrase []byte
+	id          					[]byte
+	vault_addr  					string
+	vault_auth  					string
+	vault_token  					string
+	vault_k8s_auth_role  			string
+	vault_k8s_auth_sa_token_path  	string
+	vault_k8s_auth_mount_path  		string
+	vault_secrets_mount_path    	string
+	passphrase  					[]byte
 }
 
 // Option gives options to New
@@ -58,20 +61,18 @@ func WithID(t []byte) Option {
 	})
 }
 
-// WithRegion sets the AWS region for the store
-func WithRegion(t string) Option {
-	return optionFunc(func(o *options) {
-		o.region = t
-	})
-}
-
 // Store is the store for the wallet held encrypted on Amazon S3.
 type Store struct {
-	session    *session.Session
-	id         []byte
-	region     string
-	bucket     string
-	passphrase []byte
+	client      					*vault.Client
+	id          					[]byte
+	vault_addr  					string
+	vault_auth  					string
+	vault_token  					string
+	vault_k8s_auth_role  			string
+	vault_k8s_auth_sa_token_path  	string
+	vault_k8s_auth_mount_path  		string
+	vault_secrets_mount_path  		string
+	passphrase  					[]byte
 }
 
 // New creates a new Amazon S3 store.
@@ -81,62 +82,74 @@ type Store struct {
 // This expects the access credentials to be in a standard place, e.g. ~/.aws/credentials
 func New(opts ...Option) (wtypes.Store, error) {
 	options := options{
-		region: "us-east-1",
+		vault_k8s_auth_mount_path: "kubernetes",
+		vault_k8s_auth_sa_token_path: "/var/run/secrets/kubernetes.io/serviceaccount/token",
 	}
 	for _, o := range opts {
 		o.apply(&options)
 	}
 
-	session, err := session.NewSession(&aws.Config{Region: aws.String(options.region)})
+	// If set, the VAULT_ADDR environment variable will be the address that
+	// your pod uses to communicate with Vault.
+	config := vault.DefaultConfig() // modify for more granular configuration
+	config.Address = options.vault_addr
+
+	client, err := vault.NewClient(config)
 	if err != nil {
 		return nil, err
 	}
 
-	creds, err := session.Config.Credentials.Get()
-	if err != nil {
-		return nil, err
+	if options.vault_auth == "token" {
+		client.SetToken(options.vault_token)
 	}
-	cryptKeyCopy := make([]byte, len(creds.AccessKeyID))
-	copy(cryptKeyCopy, creds.AccessKeyID)
 
-	// Generate a bucket name from the cryptKey.  This will be the SHA256 hash of a string unique to the account, as a hex string
-	// of 63 charaters (as S3 only allows bucket names up to 63 characters in length).
-	hash := util.SHA256([]byte(fmt.Sprintf("Ethereum 2 wallet:%s", creds.AccessKeyID)), options.id)
-	bucket := hex.EncodeToString(hash)[:63]
+	if options.vault_auth == "kubernetes" {
+		// The service-account token will be read from the path where the token's
+		// Kubernetes Secret is mounted. By default, Kubernetes will mount it to
+		// /var/run/secrets/kubernetes.io/serviceaccount/token, but an administrator
+		// may have configured it to be mounted elsewhere.
+		// In that case, we'll use the option WithServiceAccountTokenPath to look
+		// for the token there.
+		k8sAuth, err := auth.NewKubernetesAuth(
+			options.vault_k8s_auth_role,
+			auth.WithMountPath(options.vault_k8s_auth_mount_path),
+			auth.WithServiceAccountTokenPath(options.vault_k8s_auth_sa_token_path),
+		)
+		if err != nil {
+			return nil, err
+		}
 
-	// Check the bucket exists; if not create it
-	conn := s3.New(session)
-	_, err = conn.GetBucketAcl(&s3.GetBucketAclInput{Bucket: &bucket})
-	if err != nil {
-		if !strings.Contains(err.Error(), "NoSuchBucket") {
-			return nil, errors.Wrap(err, "unable to access bucket")
-		}
-		// Create the bucket
-		_, err = conn.CreateBucket(&s3.CreateBucketInput{Bucket: aws.String(bucket)})
+		authInfo, err := client.Auth().Login(context.Background(), k8sAuth)
 		if err != nil {
-			return nil, errors.Wrap(err, "unable to create bucket")
+			return nil, err
 		}
-		err = conn.WaitUntilBucketExists(&s3.HeadBucketInput{Bucket: aws.String(bucket)})
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to confirm bucket creation")
+		if authInfo == nil {
+			log.Fatal("no auth info was returned after login")
 		}
+		client.SetToken(authInfo.Auth.ClientToken)
 	}
+	
 
 	return &Store{
-		session:    session,
-		region:     options.region,
-		id:         options.id,
-		bucket:     bucket,
-		passphrase: options.passphrase,
+		client:     					client,
+		id:         					options.id,
+		vault_addr:  					options.vault_addr,
+		vault_auth:  					options.vault_auth,
+		vault_token:  					options.vault_token,
+		vault_k8s_auth_role:  			options.vault_k8s_auth_role,
+		vault_k8s_auth_sa_token_path:  	options.vault_k8s_auth_sa_token_path,
+		vault_k8s_auth_mount_path:  	options.vault_k8s_auth_mount_path,
+		vault_secrets_mount_path:  		options.vault_secrets_mount_path,
+		passphrase: 					options.passphrase,
 	}, nil
 }
 
 // Name returns the name of this store.
 func (s *Store) Name() string {
-	return "s3"
+	return "vault"
 }
 
 // Location returns the location of this store.
 func (s *Store) Location() string {
-	return s.bucket
+	return s.vault_addr
 }

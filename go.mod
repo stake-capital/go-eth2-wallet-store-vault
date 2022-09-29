@@ -5,6 +5,9 @@ go 1.12
 require (
 	github.com/aws/aws-sdk-go v1.40.41
 	github.com/google/uuid v1.3.0
+	github.com/hashicorp/vault/api v1.8.0 // indirect
+	github.com/hashicorp/vault/api/auth/aws v0.3.0 // indirect
+	github.com/hashicorp/vault/api/auth/kubernetes v0.3.0 // indirect
 	github.com/pkg/errors v0.9.1
 	github.com/stretchr/testify v1.7.0
 	github.com/wealdtech/go-ecodec v1.1.2

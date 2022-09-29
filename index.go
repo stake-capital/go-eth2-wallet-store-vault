@@ -11,17 +11,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package s3
+package vault
 
 import (
-	"bytes"
+	"context"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/service/s3"
-	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
 )
+
+type WalletIndexSecret struct {
+	data []byte `json="data"`
+}
 
 // StoreAccountsIndex stores the account index.
 func (s *Store) StoreAccountsIndex(walletID uuid.UUID, data []byte) error {
@@ -36,36 +37,36 @@ func (s *Store) StoreAccountsIndex(walletID uuid.UUID, data []byte) error {
 	}
 
 	path := s.walletIndexPath(walletID)
-	uploader := s3manager.NewUploader(s.session)
-	if _, err := uploader.Upload(&s3manager.UploadInput{
-		Bucket: aws.String(s.bucket),
-		Key:    aws.String(path),
-		Body:   bytes.NewReader(data),
-	}); err != nil {
+
+	s.client.KVv2(s.vault_secrets_mount_path).Put(context.Background(), path, map[string]interface{}{
+		"data": data,
+	})
+
+	if err != nil {
 		return errors.Wrap(err, "failed to store wallet index")
 	}
+
 	return nil
 }
 
 // RetrieveAccountsIndex retrieves the account index.
 func (s *Store) RetrieveAccountsIndex(walletID uuid.UUID) ([]byte, error) {
 	path := s.walletIndexPath(walletID)
-	buf := aws.NewWriteAtBuffer([]byte{})
-	downloader := s3manager.NewDownloader(s.session)
-	if _, err := downloader.Download(buf,
-		&s3.GetObjectInput{
-			Bucket: aws.String(s.bucket),
-			Key:    aws.String(path),
-		}); err != nil {
+
+	secret, err := s.client.KVv2(s.vault_secrets_mount_path).Get(context.Background(), path)
+	if err != nil {
 		return nil, err
 	}
-	data := buf.Bytes()
+
+	returnedData, _ := secret.Data["data"].([]byte)
+
 	// Do not decrypt empty index.
-	if len(data) == 2 {
-		return data, nil
+	if len(returnedData) == 2 {
+		return returnedData, nil
 	}
-	var err error
-	if data, err = s.decryptIfRequired(data); err != nil {
+
+	data, err := s.decryptIfRequired(returnedData)
+	if err != nil {
 		return nil, err
 	}
 	return data, nil
