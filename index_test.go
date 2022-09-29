@@ -21,15 +21,15 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
-	s3 "github.com/wealdtech/go-eth2-wallet-store-s3"
+	vault "github.com/wealdtech/go-eth2-wallet-store-vault"
 	"github.com/wealdtech/go-indexer"
 )
 
 func TestStoreRetrieveIndex(t *testing.T) {
 	rand.Seed(time.Now().Unix())
-	store, err := s3.New()
+	store, err := vault.New()
 	if err != nil {
-		t.Skip("unable to access S3; skipping test")
+		t.Skip("unable to access vault; skipping test")
 	}
 
 	walletID := uuid.New()

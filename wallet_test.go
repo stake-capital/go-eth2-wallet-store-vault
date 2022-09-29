@@ -20,13 +20,13 @@ import (
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	s3 "github.com/wealdtech/go-eth2-wallet-store-s3"
+	vault "github.com/wealdtech/go-eth2-wallet-store-vault"
 )
 
 func TestStoreRetrieveWallet(t *testing.T) {
-	store, err := s3.New()
+	store, err := vault.New()
 	if err != nil {
-		t.Skip("unable to access S3; skipping test")
+		t.Skip("unable to access vault; skipping test")
 	}
 
 	walletID := uuid.New()

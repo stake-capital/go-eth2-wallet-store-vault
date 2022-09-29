@@ -22,16 +22,16 @@ import (
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	s3 "github.com/wealdtech/go-eth2-wallet-store-s3"
+	vault "github.com/wealdtech/go-eth2-wallet-store-vault"
 )
 
 func TestStoreRetrieveAccount(t *testing.T) {
 	rand.Seed(time.Now().Unix())
 	//nolint:gosec
 	id := fmt.Sprintf("%s-%d", t.Name(), rand.Int31())
-	store, err := s3.New(s3.WithID([]byte(id)))
+	store, err := vault.New(vault.WithID([]byte(id)))
 	if err != nil {
-		t.Skip("unable to access S3; skipping test")
+		t.Skip("unable to access vault; skipping test")
 	}
 
 	walletID := uuid.New()
@@ -59,9 +59,9 @@ func TestDuplicateAccounts(t *testing.T) {
 	rand.Seed(time.Now().Unix())
 	// #nosec G404
 	id := fmt.Sprintf("%s-%d", t.Name(), rand.Int31())
-	store, err := s3.New(s3.WithID([]byte(id)))
+	store, err := vault.New(vault.WithID([]byte(id)))
 	if err != nil {
-		t.Skip("unable to access S3; skipping test")
+		t.Skip("unable to access vault; skipping test")
 	}
 
 	walletID := uuid.New()
@@ -85,9 +85,9 @@ func TestRetrieveNonExistentAccount(t *testing.T) {
 	rand.Seed(time.Now().Unix())
 	// #nosec G404
 	id := fmt.Sprintf("%s-%d", t.Name(), rand.Int31())
-	store, err := s3.New(s3.WithID([]byte(id)))
+	store, err := vault.New(vault.WithID([]byte(id)))
 	if err != nil {
-		t.Skip("unable to access S3; skipping test")
+		t.Skip("unable to access vault; skipping test")
 	}
 
 	walletID := uuid.New()
@@ -100,9 +100,9 @@ func TestStoreNonExistentAccount(t *testing.T) {
 	rand.Seed(time.Now().Unix())
 	// #nosec G404
 	id := fmt.Sprintf("%s-%d", t.Name(), rand.Int31())
-	store, err := s3.New(s3.WithID([]byte(id)))
+	store, err := vault.New(vault.WithID([]byte(id)))
 	if err != nil {
-		t.Skip("unable to access S3; skipping test")
+		t.Skip("unable to access vault; skipping test")
 	}
 
 	walletID := uuid.New()

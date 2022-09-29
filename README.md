@@ -1,11 +1,4 @@
 # go-eth2-wallet-store-vault
-<!-- 
-[![Tag](https://img.shields.io/github/tag/wealdtech/go-eth2-wallet-store-s3.svg)](https://github.com/wealdtech/go-eth2-wallet-store-s3/releases/)
-[![License](https://img.shields.io/github/license/wealdtech/go-eth2-wallet-store-s3.svg)](LICENSE)
-[![GoDoc](https://godoc.org/github.com/wealdtech/go-eth2-wallet-store-s3?status.svg)](https://godoc.org/github.com/wealdtech/go-eth2-wallet-store-s3)
-[![Travis CI](https://img.shields.io/travis/wealdtech/go-eth2-wallet-store-s3.svg)](https://travis-ci.org/wealdtech/go-eth2-wallet-store-s3)
-[![codecov.io](https://img.shields.io/codecov/c/github/wealdtech/go-eth2-wallet-store-s3.svg)](https://codecov.io/github/wealdtech/go-eth2-wallet-store-s3)
-[![Go Report Card](https://goreportcard.com/badge/github.com/wealdtech/go-eth2-wallet-store-s3)](https://goreportcard.com/report/github.com/wealdtech/go-eth2-wallet-store-s3) -->
 
 Hashicorp Vault based store for the [Ethereum 2 wallet](https://github.com/wealdtech/go-eth2-wallet).
 

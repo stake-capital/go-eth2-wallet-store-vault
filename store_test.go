@@ -18,22 +18,22 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	s3 "github.com/wealdtech/go-eth2-wallet-store-s3"
+	vault "github.com/wealdtech/go-eth2-wallet-store-vault"
 	wtypes "github.com/wealdtech/go-eth2-wallet-types/v2"
 )
 
 func TestNew(t *testing.T) {
-	store, err := s3.New()
+	store, err := vault.New()
 	if err != nil {
-		t.Skip("unable to access S3; skipping test")
+		t.Skip("unable to access vault; skipping test")
 	}
-	assert.Equal(t, "s3", store.Name())
-	store, err = s3.New(s3.WithRegion("us-west-1"), s3.WithID([]byte("west")))
+	assert.Equal(t, "vault", store.Name())
+	store, err = vault.New(vault.WithRegion("us-west-1"), vault.WithID([]byte("west")))
 	require.Nil(t, err)
-	assert.Equal(t, "s3", store.Name())
-	store, err = s3.New(s3.WithRegion("us-west-1"), s3.WithID([]byte("west")), s3.WithPassphrase([]byte("secret")))
+	assert.Equal(t, "vault", store.Name())
+	store, err = vault.New(vault.WithRegion("us-west-1"), vault.WithID([]byte("west")), vault.WithPassphrase([]byte("secret")))
 	require.Nil(t, err)
-	assert.Equal(t, "s3", store.Name())
+	assert.Equal(t, "vault", store.Name())
 
 	storeLocationProvider, ok := store.(wtypes.StoreLocationProvider)
 	assert.True(t, ok)
