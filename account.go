@@ -11,7 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package vault
+package vaultstorage
 
 import (
 	"context"
@@ -109,7 +109,7 @@ func (s *Store) RetrieveAccounts(walletID uuid.UUID) <-chan []byte {
 					}
 
 					returnedData, _ := secret.Data["data"].([]byte)
-					
+
 					data, err := s.decryptIfRequired(returnedData)
 					if err != nil {
 						continue

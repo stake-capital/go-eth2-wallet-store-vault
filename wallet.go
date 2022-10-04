@@ -11,11 +11,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package vault
+package vaultstorage
 
 import (
-	"encoding/json"
 	"context"
+	"encoding/json"
 
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
@@ -26,7 +26,7 @@ type WalletListSecret struct {
 }
 
 type WalletSecret struct {
-	data []byte 
+	data []byte
 }
 
 // StoreWallet stores wallet-level data.  It will fail if it cannot store the data.
@@ -82,7 +82,7 @@ func (s *Store) RetrieveWallets() <-chan []byte {
 	ch := make(chan []byte, 1024)
 	go func() {
 		walletList, err := s.client.Logical().List(s.vault_secrets_mount_path + "/metadata")
-		if err == nil && walletList != nil && walletList.Data != nil {		
+		if err == nil && walletList != nil && walletList.Data != nil {
 			k, ok := walletList.Data["keys"]
 			if ok && k != nil {
 				i, _ := k.([]string)
@@ -97,7 +97,7 @@ func (s *Store) RetrieveWallets() <-chan []byte {
 					}
 
 					returnedData, _ := secret.Data["data"].([]byte)
-					
+
 					data, err := s.decryptIfRequired(returnedData)
 					if err != nil {
 						continue

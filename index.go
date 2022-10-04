@@ -11,7 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package vault
+package vaultstorage
 
 import (
 	"context"
@@ -21,7 +21,7 @@ import (
 )
 
 type WalletIndexSecret struct {
-	data []byte 
+	data []byte
 }
 
 // StoreAccountsIndex stores the account index.

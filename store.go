@@ -11,12 +11,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package vault
+package vaultstorage
 
 import (
-	"log"
 	"context"
 	"errors"
+	"log"
 
 	vault "github.com/hashicorp/vault/api"
 	auth "github.com/hashicorp/vault/api/auth/kubernetes"
@@ -26,15 +26,15 @@ import (
 
 // options are the options for the S3 store
 type options struct {
-	id          					[]byte
-	vault_addr  					string
-	vault_auth  					string
-	vault_token  					string
-	vault_k8s_auth_role  			string
-	vault_k8s_auth_sa_token_path  	string
-	vault_k8s_auth_mount_path  		string
-	vault_secrets_mount_path    	string
-	passphrase  					[]byte
+	id                           []byte
+	vault_addr                   string
+	vault_auth                   string
+	vault_token                  string
+	vault_k8s_auth_role          string
+	vault_k8s_auth_sa_token_path string
+	vault_k8s_auth_mount_path    string
+	vault_secrets_mount_path     string
+	passphrase                   []byte
 }
 
 // Option gives options to New
@@ -62,34 +62,84 @@ func WithID(t []byte) Option {
 	})
 }
 
+// WithID sets the ID for the store
+func WithVaultAddr(t string) Option {
+	return optionFunc(func(o *options) {
+		o.vault_addr = t
+	})
+}
+
+// WithID sets the ID for the store
+func WithVaultAuth(t string) Option {
+	return optionFunc(func(o *options) {
+		o.vault_auth = t
+	})
+}
+
+// WithID sets the ID for the store
+func WithVaultToken(t string) Option {
+	return optionFunc(func(o *options) {
+		o.vault_token = t
+	})
+}
+
+// WithID sets the ID for the store
+func WithVaultKubernetesAuthRole(t string) Option {
+	return optionFunc(func(o *options) {
+		o.vault_k8s_auth_role = t
+	})
+}
+
+// WithID sets the ID for the store
+func WithVaultKubernetesAuthSATokenPath(t string) Option {
+	return optionFunc(func(o *options) {
+		o.vault_k8s_auth_sa_token_path = t
+	})
+}
+
+// WithID sets the ID for the store
+func WithVaultKubernetesAuth(t string) Option {
+	return optionFunc(func(o *options) {
+		o.vault_k8s_auth_mount_path = t
+	})
+}
+
+// WithID sets the ID for the store
+func WithVaultSecretMountPath(t string) Option {
+	return optionFunc(func(o *options) {
+		o.vault_secrets_mount_path = t
+	})
+}
+
 // Store is the store for the wallet held encrypted on Amazon S3.
 type Store struct {
-	client      					*vault.Client
-	id          					[]byte
-	vault_addr  					string
-	vault_auth  					string
-	vault_token  					string
-	vault_k8s_auth_role  			string
-	vault_k8s_auth_sa_token_path  	string
-	vault_k8s_auth_mount_path  		string
-	vault_secrets_mount_path  		string
-	passphrase  					[]byte
+	client                       *vault.Client
+	id                           []byte
+	vault_addr                   string
+	vault_auth                   string
+	vault_token                  string
+	vault_k8s_auth_role          string
+	vault_k8s_auth_sa_token_path string
+	vault_k8s_auth_mount_path    string
+	vault_secrets_mount_path     string
+	passphrase                   []byte
 }
 
 // New creates a new Amazon S3 store.
 // This takes the following options:
-//  - region: a string specifying the Amazon S3 region, defaults to "us-east-1", set with WithRegion()
-//  - id: a byte array specifying an identifying key for the store, defaults to nil, set with WithID()
+//   - region: a string specifying the Amazon S3 region, defaults to "us-east-1", set with WithRegion()
+//   - id: a byte array specifying an identifying key for the store, defaults to nil, set with WithID()
+//
 // This expects the access credentials to be in a standard place, e.g. ~/.aws/credentials
 func New(opts ...Option) (wtypes.Store, error) {
 	options := options{
-		vault_addr: 					"",
-		vault_auth: 					"",
-		vault_token: 					"",
-		vault_k8s_auth_role: 			"",
-		vault_k8s_auth_sa_token_path: 	"/var/run/secrets/kubernetes.io/serviceaccount/token",
-		vault_k8s_auth_mount_path:		"kubernetes",
-		vault_secrets_mount_path: 		"",
+		vault_addr:                   "",
+		vault_auth:                   "",
+		vault_token:                  "",
+		vault_k8s_auth_role:          "",
+		vault_k8s_auth_sa_token_path: "/var/run/secrets/kubernetes.io/serviceaccount/token",
+		vault_k8s_auth_mount_path:    "kubernetes",
+		vault_secrets_mount_path:     "",
 	}
 	for _, o := range opts {
 		o.apply(&options)
@@ -154,19 +204,18 @@ func New(opts ...Option) (wtypes.Store, error) {
 		}
 		client.SetToken(authInfo.Auth.ClientToken)
 	}
-	
 
 	return &Store{
-		client:     					client,
-		id:         					options.id,
-		vault_addr:  					options.vault_addr,
-		vault_auth:  					options.vault_auth,
-		vault_token:  					options.vault_token,
-		vault_k8s_auth_role:  			options.vault_k8s_auth_role,
-		vault_k8s_auth_sa_token_path:  	options.vault_k8s_auth_sa_token_path,
-		vault_k8s_auth_mount_path:  	options.vault_k8s_auth_mount_path,
-		vault_secrets_mount_path:  		options.vault_secrets_mount_path,
-		passphrase: 					options.passphrase,
+		client:                       client,
+		id:                           options.id,
+		vault_addr:                   options.vault_addr,
+		vault_auth:                   options.vault_auth,
+		vault_token:                  options.vault_token,
+		vault_k8s_auth_role:          options.vault_k8s_auth_role,
+		vault_k8s_auth_sa_token_path: options.vault_k8s_auth_sa_token_path,
+		vault_k8s_auth_mount_path:    options.vault_k8s_auth_mount_path,
+		vault_secrets_mount_path:     options.vault_secrets_mount_path,
+		passphrase:                   options.passphrase,
 	}, nil
 }
 
