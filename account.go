@@ -15,6 +15,7 @@ package vaultstorage
 
 import (
 	"context"
+	b64 "encoding/base64"
 	"encoding/json"
 	"strings"
 
@@ -54,8 +55,9 @@ func (s *Store) StoreAccount(walletID uuid.UUID, accountID uuid.UUID, data []byt
 	}
 
 	path := s.accountPath(walletID, accountID)
+	sEnc := b64.URLEncoding.EncodeToString(data)
 	s.client.KVv2(s.vault_secrets_mount_path).Put(context.Background(), path, map[string]interface{}{
-		"data": data,
+		"data": sEnc,
 	})
 
 	if err != nil {
@@ -72,10 +74,9 @@ func (s *Store) RetrieveAccount(walletID uuid.UUID, accountID uuid.UUID) ([]byte
 	if err != nil {
 		return nil, err
 	}
-
-	returnedData, _ := secret.Data["data"].([]byte)
-
-	data, err := s.decryptIfRequired(returnedData)
+	returnedData, _ := secret.Data["data"].(string)
+	sDec, _ := b64.URLEncoding.DecodeString(returnedData)
+	data, err := s.decryptIfRequired(sDec)
 	if err != nil {
 		return nil, err
 	}
@@ -87,30 +88,32 @@ func (s *Store) RetrieveAccounts(walletID uuid.UUID) <-chan []byte {
 	path := s.walletPath(walletID)
 	ch := make(chan []byte, 1024)
 	go func() {
-		accountList, err := s.client.Logical().List(s.vault_secrets_mount_path + "/" + path + "/metadata")
+		endpoint := "/" + s.vault_secrets_mount_path + "/metadata/wallets/" + path
+		accountList, err := s.client.Logical().List(endpoint)
 		if err == nil && accountList != nil && accountList.Data != nil {
-			k, ok := accountList.Data["keys"]
-			if ok && k != nil {
-				i, _ := k.([]string)
-				for _, item := range i {
-					if strings.HasSuffix(item, "/") {
+			k := accountList.Data["keys"].([]interface{})
+			if k != nil {
+				for _, item := range k {
+					account := item.(string)
+					if strings.HasSuffix(account, "/") {
 						// Directory
 						continue
 					}
-					if strings.HasSuffix(item, walletID.String()) {
+					if strings.HasSuffix(account, walletID.String()) {
 						// Wallet
 						continue
 					}
 
-					uuidId, _ := uuid.Parse(item)
+					uuidId, _ := uuid.Parse(account)
 					secret, err := s.client.KVv2(s.vault_secrets_mount_path).Get(context.Background(), s.accountPath(walletID, uuidId))
 					if err != nil {
 						continue
 					}
 
-					returnedData, _ := secret.Data["data"].([]byte)
+					returnedData, _ := secret.Data["data"].(string)
 
-					data, err := s.decryptIfRequired(returnedData)
+					sDec, _ := b64.URLEncoding.DecodeString(returnedData)
+					data, err := s.decryptIfRequired(sDec)
 					if err != nil {
 						continue
 					}

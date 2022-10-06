@@ -19,28 +19,35 @@ import (
 	"testing"
 	"time"
 
+	vault "github.com/bliiitz/go-eth2-wallet-store-vault"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	vault "github.com/wealdtech/go-eth2-wallet-store-vault"
 )
 
 func TestStoreRetrieveEncryptedWallet(t *testing.T) {
 	rand.Seed(time.Now().Unix())
 	// #nosec G404
 	id := fmt.Sprintf("%s-%d", t.Name(), rand.Int31())
-	store, err := vault.New(vault.WithID([]byte(id)), vault.WithPassphrase([]byte("test")))
+	store, err := vault.New(
+		vault.WithID([]byte(id)),
+		vault.WithPassphrase([]byte("test")),
+		vault.WithVaultAddr("http://localhost:8200"),
+		vault.WithVaultSecretMountPath("secret"),
+		vault.WithVaultToken("golang-test"),
+		vault.WithVaultAuth("token"),
+	)
 	if err != nil {
-		t.Skip("unable to access vault; skipping test")
+		t.Fatal(err)
 	}
 
 	walletID := uuid.New()
-	walletName := "test"
-	data := []byte(fmt.Sprintf(`{"uuid":%q,"name":%q}`, walletID, walletName))
+	walletName := uuid.New()
+	data := []byte(fmt.Sprintf(`{"uuid":%q,"name":%q}`, walletID, walletName.String()))
 
-	err = store.StoreWallet(walletID, walletName, data)
+	err = store.StoreWallet(walletID, walletName.String(), data)
 	require.Nil(t, err)
-	retData, err := store.RetrieveWallet(walletName)
+	retData, err := store.RetrieveWallet(walletName.String())
 	require.Nil(t, err)
 	assert.Equal(t, data, retData)
 
@@ -57,9 +64,16 @@ func TestStoreRetrieveEncryptedAccount(t *testing.T) {
 	rand.Seed(time.Now().Unix())
 	// #nosec G404
 	id := fmt.Sprintf("%s-%d", t.Name(), rand.Int31())
-	store, err := vault.New(vault.WithID([]byte(id)), vault.WithPassphrase([]byte("test")))
+	store, err := vault.New(
+		vault.WithID([]byte(id)),
+		vault.WithPassphrase([]byte("test")),
+		vault.WithVaultAddr("http://localhost:8200"),
+		vault.WithVaultSecretMountPath("secret"),
+		vault.WithVaultToken("golang-test"),
+		vault.WithVaultAuth("token"),
+	)
 	if err != nil {
-		t.Skip("unable to access vault; skipping test")
+		t.Fatal(err)
 	}
 
 	walletID := uuid.New()
@@ -89,9 +103,16 @@ func TestBadWalletKey(t *testing.T) {
 	rand.Seed(time.Now().Unix())
 	// #nosec G404
 	id := fmt.Sprintf("%s-%d", t.Name(), rand.Int31())
-	store, err := vault.New(vault.WithID([]byte(id)), vault.WithPassphrase([]byte("test")))
+	store, err := vault.New(
+		vault.WithID([]byte(id)),
+		vault.WithPassphrase([]byte("test")),
+		vault.WithVaultAddr("http://localhost:8200"),
+		vault.WithVaultSecretMountPath("secret"),
+		vault.WithVaultToken("golang-test"),
+		vault.WithVaultAuth("token"),
+	)
 	if err != nil {
-		t.Skip("unable to access vault; skipping test")
+		t.Fatal(err)
 	}
 
 	walletID := uuid.New()
@@ -102,7 +123,17 @@ func TestBadWalletKey(t *testing.T) {
 	require.Nil(t, err)
 
 	// Open wallet with store with different key; should fail
-	store, err = vault.New(vault.WithID([]byte(id)), vault.WithPassphrase([]byte("badkey")))
+	store, err = vault.New(
+		vault.WithID([]byte("test")),
+		vault.WithPassphrase([]byte("badkey")),
+		vault.WithVaultAddr("http://localhost:8200"),
+		vault.WithVaultSecretMountPath("secret"),
+		vault.WithVaultToken("golang-test"),
+		vault.WithVaultAuth("token"),
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
 	require.Nil(t, err)
 	_, err = store.RetrieveWallet(walletName)
 	require.NotNil(t, err)

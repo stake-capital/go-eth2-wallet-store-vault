@@ -17,6 +17,8 @@ import (
 	"context"
 	"encoding/json"
 
+	b64 "encoding/base64"
+
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
 )
@@ -40,8 +42,9 @@ func (s *Store) StoreWallet(id uuid.UUID, name string, data []byte) error {
 		return errors.Wrap(err, "failed to encrypt wallet")
 	}
 
-	s.client.KVv2(s.vault_secrets_mount_path).Put(context.Background(), path, map[string]interface{}{
-		"data": data,
+	sEnc := b64.URLEncoding.EncodeToString(data)
+	_, err = s.client.KVv2(s.vault_secrets_mount_path).Put(context.Background(), path, map[string]interface{}{
+		"data": sEnc,
 	})
 	if err != nil {
 		return errors.Wrap(err, "failed to store wallet")
@@ -81,24 +84,29 @@ func (s *Store) RetrieveWalletByID(walletID uuid.UUID) ([]byte, error) {
 func (s *Store) RetrieveWallets() <-chan []byte {
 	ch := make(chan []byte, 1024)
 	go func() {
-		walletList, err := s.client.Logical().List(s.vault_secrets_mount_path + "/metadata")
+		endpoint := "/" + s.vault_secrets_mount_path + "/metadata/wallets"
+		walletList, err := s.client.Logical().List(endpoint)
+
 		if err == nil && walletList != nil && walletList.Data != nil {
-			k, ok := walletList.Data["keys"]
-			if ok && k != nil {
-				i, _ := k.([]string)
-				for _, walletIdWithSuffix := range i {
+			k := walletList.Data["keys"].([]interface{})
+			if k != nil {
+				for _, item := range k {
+					walletIdWithSuffix := item.(string)
 					lastCharPos := len(walletIdWithSuffix) - 1
 					walletId := walletIdWithSuffix[:lastCharPos]
 
 					uuidId, _ := uuid.Parse(walletId)
-					secret, err := s.client.KVv2(s.vault_secrets_mount_path).Get(context.Background(), s.walletHeaderPath(uuidId))
+					path := s.walletHeaderPath(uuidId)
+
+					secret, err := s.client.KVv2(s.vault_secrets_mount_path).Get(context.Background(), path)
 					if err != nil {
 						continue
 					}
 
-					returnedData, _ := secret.Data["data"].([]byte)
+					returnedData, _ := secret.Data["data"].(string)
 
-					data, err := s.decryptIfRequired(returnedData)
+					sDec, _ := b64.URLEncoding.DecodeString(returnedData)
+					data, err := s.decryptIfRequired([]byte(sDec))
 					if err != nil {
 						continue
 					}

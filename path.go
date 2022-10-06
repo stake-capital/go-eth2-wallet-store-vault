@@ -23,13 +23,13 @@ func (s *Store) walletPath(walletID uuid.UUID) string {
 }
 
 func (s *Store) walletHeaderPath(walletID uuid.UUID) string {
-	return fmt.Sprintf("%s/%s/%s", s.vault_secrets_mount_path, s.walletPath(walletID), s.walletPath(walletID))
+	return fmt.Sprintf("wallets/%s/%s", s.walletPath(walletID), s.walletPath(walletID))
 }
 
 func (s *Store) accountPath(walletID uuid.UUID, accountID uuid.UUID) string {
-	return fmt.Sprintf("%s/%s/%s", s.vault_secrets_mount_path, s.walletPath(walletID), accountID.String())
+	return fmt.Sprintf("wallets/%s/%s", s.walletPath(walletID), accountID.String())
 }
 
 func (s *Store) walletIndexPath(walletID uuid.UUID) string {
-	return fmt.Sprintf("%s/%s/index", s.vault_secrets_mount_path, s.walletPath(walletID))
+	return fmt.Sprintf("wallets/%s/index", s.walletPath(walletID))
 }

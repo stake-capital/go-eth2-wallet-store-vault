@@ -17,25 +17,31 @@ import (
 	"fmt"
 	"testing"
 
+	vault "github.com/bliiitz/go-eth2-wallet-store-vault"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	vault "github.com/wealdtech/go-eth2-wallet-store-vault"
 )
 
 func TestStoreRetrieveWallet(t *testing.T) {
-	store, err := vault.New()
+	store, err := vault.New(
+		vault.WithPassphrase([]byte("test")),
+		vault.WithVaultAddr("http://localhost:8200"),
+		vault.WithVaultSecretMountPath("secret"),
+		vault.WithVaultToken("golang-test"),
+		vault.WithVaultAuth("token"),
+	)
 	if err != nil {
-		t.Skip("unable to access vault; skipping test")
+		t.Fatal(err)
 	}
 
 	walletID := uuid.New()
-	walletName := "test wallet"
-	data := []byte(fmt.Sprintf(`{"uuid":%q,"name":%q}`, walletID, walletName))
+	walletName := uuid.New()
+	data := []byte(fmt.Sprintf(`{"uuid":%q,"name":%q}`, walletID, walletName.String()))
 
-	err = store.StoreWallet(walletID, walletName, data)
+	err = store.StoreWallet(walletID, walletName.String(), data)
 	require.Nil(t, err)
-	retData, err := store.RetrieveWallet(walletName)
+	retData, err := store.RetrieveWallet(walletName.String())
 	require.Nil(t, err)
 	assert.Equal(t, data, retData)
 

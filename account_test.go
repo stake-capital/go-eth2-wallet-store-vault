@@ -19,19 +19,26 @@ import (
 	"testing"
 	"time"
 
+	vault "github.com/bliiitz/go-eth2-wallet-store-vault"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	vault "github.com/wealdtech/go-eth2-wallet-store-vault"
 )
 
 func TestStoreRetrieveAccount(t *testing.T) {
 	rand.Seed(time.Now().Unix())
 	//nolint:gosec
 	id := fmt.Sprintf("%s-%d", t.Name(), rand.Int31())
-	store, err := vault.New(vault.WithID([]byte(id)))
+	store, err := vault.New(
+		vault.WithID([]byte(id)),
+		vault.WithPassphrase([]byte("test")),
+		vault.WithVaultAddr("http://localhost:8200"),
+		vault.WithVaultSecretMountPath("secret"),
+		vault.WithVaultToken("golang-test"),
+		vault.WithVaultAuth("token"),
+	)
 	if err != nil {
-		t.Skip("unable to access vault; skipping test")
+		t.Fatal(err)
 	}
 
 	walletID := uuid.New()
@@ -59,9 +66,16 @@ func TestDuplicateAccounts(t *testing.T) {
 	rand.Seed(time.Now().Unix())
 	// #nosec G404
 	id := fmt.Sprintf("%s-%d", t.Name(), rand.Int31())
-	store, err := vault.New(vault.WithID([]byte(id)))
+	store, err := vault.New(
+		vault.WithID([]byte(id)),
+		vault.WithPassphrase([]byte("test")),
+		vault.WithVaultAddr("http://localhost:8200"),
+		vault.WithVaultSecretMountPath("secret"),
+		vault.WithVaultToken("golang-test"),
+		vault.WithVaultAuth("token"),
+	)
 	if err != nil {
-		t.Skip("unable to access vault; skipping test")
+		t.Fatal(err)
 	}
 
 	walletID := uuid.New()
@@ -85,9 +99,16 @@ func TestRetrieveNonExistentAccount(t *testing.T) {
 	rand.Seed(time.Now().Unix())
 	// #nosec G404
 	id := fmt.Sprintf("%s-%d", t.Name(), rand.Int31())
-	store, err := vault.New(vault.WithID([]byte(id)))
+	store, err := vault.New(
+		vault.WithID([]byte(id)),
+		vault.WithPassphrase([]byte("test")),
+		vault.WithVaultAddr("http://localhost:8200"),
+		vault.WithVaultSecretMountPath("secret"),
+		vault.WithVaultToken("golang-test"),
+		vault.WithVaultAuth("token"),
+	)
 	if err != nil {
-		t.Skip("unable to access vault; skipping test")
+		t.Fatal(err)
 	}
 
 	walletID := uuid.New()
@@ -100,9 +121,16 @@ func TestStoreNonExistentAccount(t *testing.T) {
 	rand.Seed(time.Now().Unix())
 	// #nosec G404
 	id := fmt.Sprintf("%s-%d", t.Name(), rand.Int31())
-	store, err := vault.New(vault.WithID([]byte(id)))
+	store, err := vault.New(
+		vault.WithID([]byte(id)),
+		vault.WithPassphrase([]byte("test")),
+		vault.WithVaultAddr("http://localhost:8200"),
+		vault.WithVaultSecretMountPath("secret"),
+		vault.WithVaultToken("golang-test"),
+		vault.WithVaultAuth("token"),
+	)
 	if err != nil {
-		t.Skip("unable to access vault; skipping test")
+		t.Fatal(err)
 	}
 
 	walletID := uuid.New()

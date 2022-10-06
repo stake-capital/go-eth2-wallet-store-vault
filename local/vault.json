@@ -1,0 +1,1 @@
+{ "storage": { "inmem": {} }, "disable_mlock": true, "ui": true, "plugin_directory": "/Users/bliiitz/Documents/workspaces/stakedao/go-eth2-wallet-store-vault/local", "api_addr": "http://127.0.0.1:8200" }

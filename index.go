@@ -15,6 +15,7 @@ package vaultstorage
 
 import (
 	"context"
+	b64 "encoding/base64"
 
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
@@ -38,8 +39,9 @@ func (s *Store) StoreAccountsIndex(walletID uuid.UUID, data []byte) error {
 
 	path := s.walletIndexPath(walletID)
 
+	sEnc := b64.URLEncoding.EncodeToString(data)
 	s.client.KVv2(s.vault_secrets_mount_path).Put(context.Background(), path, map[string]interface{}{
-		"data": data,
+		"data": sEnc,
 	})
 
 	if err != nil {
@@ -58,14 +60,14 @@ func (s *Store) RetrieveAccountsIndex(walletID uuid.UUID) ([]byte, error) {
 		return nil, err
 	}
 
-	returnedData, _ := secret.Data["data"].([]byte)
+	returnedData, _ := secret.Data["data"].(string)
 
+	sDec, _ := b64.URLEncoding.DecodeString(returnedData)
 	// Do not decrypt empty index.
-	if len(returnedData) == 2 {
-		return returnedData, nil
+	if len(sDec) == 2 {
+		return sDec, nil
 	}
-
-	data, err := s.decryptIfRequired(returnedData)
+	data, err := s.decryptIfRequired(sDec)
 	if err != nil {
 		return nil, err
 	}

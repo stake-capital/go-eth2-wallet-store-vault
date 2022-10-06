@@ -19,17 +19,23 @@ import (
 	"testing"
 	"time"
 
+	vault "github.com/bliiitz/go-eth2-wallet-store-vault"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
-	vault "github.com/wealdtech/go-eth2-wallet-store-vault"
 	"github.com/wealdtech/go-indexer"
 )
 
 func TestStoreRetrieveIndex(t *testing.T) {
 	rand.Seed(time.Now().Unix())
-	store, err := vault.New()
+	store, err := vault.New(
+		vault.WithPassphrase([]byte("test")),
+		vault.WithVaultAddr("http://localhost:8200"),
+		vault.WithVaultSecretMountPath("secret"),
+		vault.WithVaultToken("golang-test"),
+		vault.WithVaultAuth("token"),
+	)
 	if err != nil {
-		t.Skip("unable to access vault; skipping test")
+		t.Fatal(err)
 	}
 
 	walletID := uuid.New()

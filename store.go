@@ -205,6 +205,11 @@ func New(opts ...Option) (wtypes.Store, error) {
 		client.SetToken(authInfo.Auth.ClientToken)
 	}
 
+	_, err = client.Logical().List(options.vault_secrets_mount_path + "/wallets/metadata")
+	if err != nil {
+		log.Fatal("Error in mounting vault wallet store")
+	}
+
 	return &Store{
 		client:                       client,
 		id:                           options.id,

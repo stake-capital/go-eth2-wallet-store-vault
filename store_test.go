@@ -16,26 +16,24 @@ package vaultstorage_test
 import (
 	"testing"
 
+	vault "github.com/bliiitz/go-eth2-wallet-store-vault"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	vault "github.com/wealdtech/go-eth2-wallet-store-vault"
-	wtypes "github.com/wealdtech/go-eth2-wallet-types/v2"
+	// "github.com/stretchr/testify/require"
+	// wtypes "github.com/wealdtech/go-eth2-wallet-types/v2"
 )
 
 func TestNew(t *testing.T) {
-	store, err := vault.New()
+	store, err := vault.New(
+		vault.WithPassphrase([]byte("test")),
+		vault.WithVaultAddr("http://localhost:8200"),
+		vault.WithVaultSecretMountPath("secret"),
+		vault.WithVaultToken("golang-test"),
+		vault.WithVaultAuth("token"),
+	)
 	if err != nil {
-		t.Skip("unable to access vault; skipping test")
+		t.Fatal(err)
 	}
-	assert.Equal(t, "vault", store.Name())
-	store, err = vault.New(vault.WithRegion("us-west-1"), vault.WithID([]byte("west")))
-	require.Nil(t, err)
-	assert.Equal(t, "vault", store.Name())
-	store, err = vault.New(vault.WithRegion("us-west-1"), vault.WithID([]byte("west")), vault.WithPassphrase([]byte("secret")))
-	require.Nil(t, err)
+
 	assert.Equal(t, "vault", store.Name())
 
-	storeLocationProvider, ok := store.(wtypes.StoreLocationProvider)
-	assert.True(t, ok)
-	assert.Equal(t, "67038ae26ce874153859c347eebba98cebd31639b3a959c42d6b47e0452b185", storeLocationProvider.Location())
 }
