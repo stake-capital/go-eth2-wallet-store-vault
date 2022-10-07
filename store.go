@@ -205,7 +205,8 @@ func New(opts ...Option) (wtypes.Store, error) {
 		client.SetToken(authInfo.Auth.ClientToken)
 	}
 
-	_, err = client.Logical().List(options.vault_secrets_mount_path + "/wallets/metadata")
+	endpoint := "/" + options.vault_secrets_mount_path + "/metadata/wallets"
+	_, err = client.Logical().List(endpoint)
 	if err != nil {
 		return nil, err
 	}
