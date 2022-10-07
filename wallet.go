@@ -16,6 +16,7 @@ package vaultstorage
 import (
 	"context"
 	"encoding/json"
+	"log"
 
 	b64 "encoding/base64"
 
@@ -86,6 +87,10 @@ func (s *Store) RetrieveWallets() <-chan []byte {
 	go func() {
 		endpoint := "/" + s.vault_secrets_mount_path + "/metadata/wallets"
 		walletList, err := s.client.Logical().List(endpoint)
+
+		if err != nil {
+			log.Fatalln(err)
+		}
 
 		if err == nil && walletList != nil && walletList.Data != nil {
 			k := walletList.Data["keys"].([]interface{})

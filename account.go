@@ -17,6 +17,7 @@ import (
 	"context"
 	b64 "encoding/base64"
 	"encoding/json"
+	"log"
 	"strings"
 
 	"github.com/google/uuid"
@@ -90,6 +91,10 @@ func (s *Store) RetrieveAccounts(walletID uuid.UUID) <-chan []byte {
 	go func() {
 		endpoint := "/" + s.vault_secrets_mount_path + "/metadata/wallets/" + path
 		accountList, err := s.client.Logical().List(endpoint)
+		if err != nil {
+			log.Fatalln(err)
+		}
+
 		if err == nil && accountList != nil && accountList.Data != nil {
 			k := accountList.Data["keys"].([]interface{})
 			if k != nil {
