@@ -48,3 +48,29 @@ func TestStoreRetrieveWallet(t *testing.T) {
 	for range store.RetrieveWallets() {
 	}
 }
+
+func TestStoreRetrieveWalletByName(t *testing.T) {
+	store, err := vault.New(
+		vault.WithPassphrase([]byte("test")),
+		vault.WithVaultAddr("http://localhost:8200"),
+		vault.WithVaultSecretMountPath("secret"),
+		vault.WithVaultToken("golang-test"),
+		vault.WithVaultAuth("token"),
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	walletID := uuid.New()
+	walletName := uuid.New()
+	data := []byte(fmt.Sprintf(`{"uuid":%q,"name":%q}`, walletID, walletName.String()))
+
+	err = store.StoreWallet(walletID, walletName.String(), data)
+	require.Nil(t, err)
+	retData, err := store.RetrieveWallet(walletName.String())
+	require.Nil(t, err)
+	assert.Equal(t, data, retData)
+
+	for range store.RetrieveWallets() {
+	}
+}
