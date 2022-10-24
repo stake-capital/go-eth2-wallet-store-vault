@@ -44,7 +44,7 @@ package main
 
 import (
 	e2wallet "github.com/wealdtech/go-eth2-wallet"
-	vault "github.com/bliiitz/go-eth2-wallet-store-vault"
+	vault "github.com/stake-capital/go-eth2-wallet-store-vault"
 )
 
 func main() {
@@ -77,7 +77,7 @@ Bliiitz: [@bliiitz](https://github.com/bliiitz).
 
 ## Contribute
 
-Contributions welcome. Please check out [the issues](https://github.com/bliiitz/go-eth2-wallet-store-vault/issues).
+Contributions welcome. Please check out [the issues](https://github.com/stake-capital/go-eth2-wallet-store-vault/issues).
 
 ## License
 

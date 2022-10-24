@@ -19,8 +19,8 @@ import (
 	"testing"
 	"time"
 
-	vault "github.com/bliiitz/go-eth2-wallet-store-vault"
 	"github.com/google/uuid"
+	vault "github.com/stake-capital/go-eth2-wallet-store-vault"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

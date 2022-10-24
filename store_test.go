@@ -16,7 +16,7 @@ package vaultstorage_test
 import (
 	"testing"
 
-	vault "github.com/bliiitz/go-eth2-wallet-store-vault"
+	vault "github.com/stake-capital/go-eth2-wallet-store-vault"
 	"github.com/stretchr/testify/assert"
 	// "github.com/stretchr/testify/require"
 	// wtypes "github.com/wealdtech/go-eth2-wallet-types/v2"

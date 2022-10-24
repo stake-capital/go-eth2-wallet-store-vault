@@ -1,4 +1,4 @@
-module github.com/bliiitz/go-eth2-wallet-store-vault
+module github.com/stake-capital/go-eth2-wallet-store-vault
 
 go 1.12
 
